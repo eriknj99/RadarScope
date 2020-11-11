@@ -22,10 +22,17 @@ def initDisplay():
     pygame.display.set_caption('floatme')
     return display_surface
 
+
+
 # Set custom colors
 bgColor = "#000000"
 fgColor = "#00FF00"
 pltColor = "#00FF00"
+
+#FFT params for x axis values
+SAMPLE_RATE = 50000
+FFT_SIZE = 2048
+
 
 # Set Serial Port
 serialPort = "/dev/ttyACM0"
@@ -33,7 +40,7 @@ serialPort = "/dev/ttyACM0"
 # Statustext
 statusTxt = ""
 
-connect = True # Set this to false for debugging without access to serial data, Random Data will be used 
+connect = True # Set this to false for debugging without access to serial data, Random Data will be used
 
 
 if connect:
@@ -60,17 +67,18 @@ time_holder = time.time()
 while True:
     #Read in raw serial data.
     #If port is disconnected set mode to disconnected
-    #If port is reconnected set mode back to connected 
+    #If port is reconnected set mode back to connected
     #This should allow hotplugging
     if connect:
             try:
                 raw = str(ser.readline()).replace("\\r\\n", "")
                 statusTxt = " CONNECTED " + serialPort
+                pltColor = "#00FF00"
             except:
                 connect = False
-                pltColor = "#FF0000"
                 print("Error: Unable to establish serial connection to " + serialPort)
                 statusTxt = " DISCONNECTED"
+                pltColor = "#00FF00"
                 raw = ""
                 for i in range(0,2048):
                     raw += (str( max(0,((random.random() * 100) - 90)) ))
@@ -79,8 +87,11 @@ while True:
         try:
             ser = serial.Serial(serialPort, 115200)
             statusTxt = " CONNECTED " + serialPort
+            raw = str(ser.readline()).replace("\\r\\n", "")
+            pltColor = "#00FF00"
         except:
             statusTxt = " DISCONNECTED"
+            pltColor = "#FF0000"
             raw = ""
             for i in range(0,2048):
                 raw += "0.0"
@@ -92,19 +103,40 @@ while True:
     datax = []
     datay = []
     count = 0.0
-    for vs in rawList:
+
+    maxYIndex = 0
+    maxY = 0.0
+
+    for i in range(0,int(FFT_SIZE/2)):
+        datax.append(count)
+        count+=(SAMPLE_RATE)/FFT_SIZE
         try:
-            datay.append(float(vs))
-            datax.append(count)
-            count+=1.0
-        except ValueError:
+            yval = float(rawList[i])
+            datay.append(yval)
+
+            if yval > maxY:
+                maxY = yval
+                maxYIndex = i
+        except:
+            datay.append(0.0)
             pass
 
-    #Plot the data
-    plt.plot(datax,datay,color=pltColor)
-    plt.title("Radar Scope")
 
-    #Set custom styling 
+    peakFequency = datax[maxYIndex]
+
+#    print(datay)
+
+
+    #Plot the data
+    plt.title("Radar Scope")
+    plt.ylim(0, 25000)
+    plt.plot(datax,datay,color=pltColor)
+
+    plt.text(peakFequency + 10, maxY, "Peak: " + str(peakFequency), fontsize=12, color="#FF0000")
+    plt.axvline(x=peakFequency, color="#FF0000",linestyle=':')
+
+
+    #Set custom styling
     plt.grid(color=fgColor, linestyle=':', linewidth=1)
     ax = plt.gca()
     ax.set_facecolor(bgColor)
@@ -122,17 +154,15 @@ while True:
 
     #Load buffer into pygame image
     buf.seek(0)
-    image = pygame.image.load(buf) 
-
-
+    image = pygame.image.load(buf)
 
     # Draw the plot image on screen
     display_surface.blit(image, (0, 0))
 
-
     #Calculate refresh rate and draw status on screen
-    statusTxt += "    refresh: " + str((round(1/(time.time() - time_holder), 2))) + "Hz" 
+    statusTxt += "    refresh: " + str((round(1/(time.time() - time_holder), 2))) + "Hz"
     time_holder = time.time()
+
     status = font.render(statusTxt, True, pltColor)
     display_surface.blit(status, (0, 0))
 
@@ -147,4 +177,3 @@ while True:
         if event.type == pygame.QUIT :
             pygame.quit()
             quit()
-
