@@ -11,6 +11,8 @@ os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 import pygame
 import io
 from matplotlib.pyplot import figure
+import threading
+
 
 # Initialize the pygame display with a resizable window
 def initDisplay():
@@ -33,7 +35,6 @@ pltColor = "#00FF00"
 SAMPLE_RATE = 50000
 FFT_SIZE = 2048
 
-
 # Set Serial Port
 serialPort = "/dev/ttyACM0"
 
@@ -41,7 +42,6 @@ serialPort = "/dev/ttyACM0"
 statusTxt = ""
 
 connect = True # Set this to false for debugging without access to serial data, Random Data will be used
-
 
 if connect:
     try:
@@ -162,6 +162,8 @@ while True:
     #Calculate refresh rate and draw status on screen
     statusTxt += "    refresh: " + str((round(1/(time.time() - time_holder), 2))) + "Hz"
     time_holder = time.time()
+
+    statusTxt += "    Peak: " + str(peakFequency) + " Hz"
 
     status = font.render(statusTxt, True, pltColor)
     display_surface.blit(status, (0, 0))
