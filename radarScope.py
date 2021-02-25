@@ -36,7 +36,7 @@ SAMPLE_RATE = 50000
 FFT_SIZE = 2048
 
 # Set Serial Port
-serialPort = "/dev/ttyACM0"
+serialPort = "/dev/bus/usb/001/018"
 
 # Statustext
 statusTxt = ""
@@ -63,6 +63,9 @@ figure(figsize=(10,5))
 plt.style.use('dark_background')
 
 time_holder = time.time()
+
+outputfile = open("out.dat", "w")
+
 # Main Loop
 while True:
     #Read in raw serial data.
@@ -122,6 +125,9 @@ while True:
             pass
 
 
+    #print(str(datay))
+    outputfile.writelines(str(datay))
+
     peakFequency = datax[maxYIndex]
 
 #    print(datay)
@@ -129,7 +135,7 @@ while True:
 
     #Plot the data
     plt.title("Radar Scope")
-    plt.ylim(0, 25000)
+    #plt.ylim(0, 50000)
     plt.plot(datax,datay,color=pltColor)
 
     plt.text(peakFequency + 10, maxY, "Peak: " + str(peakFequency), fontsize=12, color="#FF0000")
@@ -179,3 +185,4 @@ while True:
         if event.type == pygame.QUIT :
             pygame.quit()
             quit()
+            outputfile.close()
