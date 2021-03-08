@@ -1,10 +1,3 @@
-#-*- coding: utf-8 -*-
-"""
-This example demonstrates many of the 2D plotting capabilities
-in pyqtgraph. All of the plots may be panned/scaled by dragging with 
-the left/right mouse buttons. Right click on any plot to show a context menu.
-"""
-
 import PyQt5
 from pyqtgraph.Qt import QtGui, QtCore
 import numpy as np
@@ -12,25 +5,21 @@ import pyqtgraph as pg
 import pyqtgraph.ptime as ptime
 import AsyncSerialInput
 
+
+# Initialize the Serial Input
 ds = AsyncSerialInput.AsyncSerialInput()
 
-#QtGui.QApplication.setGraphicsSystem('opengl')
+
+# Setup the window
 app = QtGui.QApplication([])
-#mw = QtGui.QMainWindow()
-#mw.resize(800,800)
-
 win = pg.GraphicsLayoutWidget(show=True, title="floatme")
-
 win.resize(1000,600)
 win.setWindowTitle('RadarScope v2')
-
-# Enable antialiasing for prettier plots
 pg.setConfigOptions(antialias=True)
 
 
+# Graph the FFT 
 pfft = win.addPlot(title="FFT", name="Plot1")
-
-
 lpeak = pg.InfiniteLine(pos=100, angle=90,pen='r')
 pfft.addItem(lpeak)
 pfft.showGrid(x=True, y=True)
@@ -56,6 +45,8 @@ timer.timeout.connect(update)
 timer.start(20)
 
 win.nextRow()
+
+# Graph the waterfall diaplay
 
 #view = pg.ViewBox()
 view = pg.PlotItem(invertY=True)
