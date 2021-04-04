@@ -43,7 +43,7 @@ class ModularScope():
         view.addItem(pp)
 
         def update():
-            pp.setText(
+            pp.setText("Homebrew Radar\n" + 
                      "\nSync Rate : " + self.sp.getSyncRate() + 
                      "\nFrame Rate: " + self.fq.getFreq() +
                      "\nPeak      : " + str(self.PEAKS[np.size(self.PEAKS) - 1]) + 
