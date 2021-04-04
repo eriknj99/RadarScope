@@ -2,24 +2,37 @@ import serial
 import struct
 import time
 import threading
+import time
 import numpy as np
 
 class AsyncSerialInput:
     #Serial Params
     serialPort = "/dev/ttyACM0"
-    baudRate = 115200
+    baudrate = 115200
     SOT = [0x02,0x03,0x04,0x05]
 
-    #FFT Params
-    SAMPLES = 1024
+
+    def getFFTSize(self):
+        return self.FFT_SIZE 
+  
+    def getSampleRate(self):
+        return self.SAMPLE_RATE
+
+    # This will wait until new data is recieved and return it when it is ready. Synchronous!
+    def getNext(self):
+        while(self.prevData == self.data):
+            time.sleep(0)
+        self.prevData = self.data
+        return np.asarray(self.data)[:int(self.FFT_SIZE/2)]
+
 
     # This is where you should access the recieved data. You can querry this function whenever you want. It will always be in sync.
     def getLast(self):
-        return np.asarray(self.data)[:int(self.SAMPLES)]
+        return np.asarray(self.data)[:int(self.FFT_SIZE/2)]
 
     def recieve(self):
         try:
-            ser = serial.Serial(self.serialPort, self.baudRate)
+            ser = serial.Serial(self.serialPort, self.baudrate)
         except:
             print("Unable to connect to serial port:" + self.serialPort + "@" + str(self.baudrate))
 
@@ -37,16 +50,25 @@ class AsyncSerialInput:
 
 
             # Recieve the data. SAMPLES * 4 bytes : SAMPLES floats
-            raw = ser.read(4 * self.SAMPLES) 
-            f = struct.unpack('%sf' % self.SAMPLES, raw)
+            raw = ser.read(4 * self.FFT_SIZE) 
+            f = struct.unpack('%sf' % self.FFT_SIZE, raw)
 
             # Set the data variable to the recieved data.
             self.data = f
+            self.sp.FFTSync(f)
 
-    def __init__(self):
+    def __init__(self, sp):
+
+        self.sp = sp
+
         self.data = []
-        x = threading.Thread(target=self.recieve)
-        x.start()
+        self.prevData = []
+        
+        self.SAMPLE_RATE = 1000
+        self.FFT_SIZE  = 1024
+        
+        self.x = threading.Thread(target=self.recieve)
+        self.x.start()
 
 
 

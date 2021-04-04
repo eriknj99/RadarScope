@@ -3,13 +3,16 @@ from pyqtgraph.Qt import QtGui, QtCore
 import numpy as np
 import pyqtgraph as pg
 import pyqtgraph.ptime as ptime
-import AsyncSerialInput
+import SignalProcessor
 
+
+
+def dataFetchLoop():
+    global last_data 
+    last_data = sp.getRawFFT()
 
 # Initialize the Serial Input
-ds = AsyncSerialInput.AsyncSerialInput()
-
-
+sp = SignalProcessor.SignalProcessor()
 # Setup the window
 app = QtGui.QApplication([])
 win = pg.GraphicsLayoutWidget(show=True, title="floatme")
@@ -17,32 +20,39 @@ win.resize(1000,600)
 win.setWindowTitle('RadarScope v2')
 pg.setConfigOptions(antialias=True)
 
+mainTmr = QtCore.QTimer()
+mainTmr.timeout.connect(dataFetchLoop)
+mainTmr.start(20)
 
-# Graph the FFT 
-pfft = win.addPlot(title="FFT", name="Plot1")
-lpeak = pg.InfiniteLine(pos=100, angle=90,pen='r')
-pfft.addItem(lpeak)
-pfft.showGrid(x=True, y=True)
-curve = pfft.plot(pen='g')
-ptr = 0
-pfft.enableAutoRange('xy', True)
-last_data = ds.getLast()
+def showFFT(win, mainTmr):
+    # Graph the FFT 
+    pfft = win.addPlot(title="Raw FFT", name="Plot1")
+    lpeak = pg.InfiniteLine(pos=100, angle=90,pen='r')
+    pfft.addItem(lpeak)
+    pfft.showGrid(x=True, y=True)
+    curve = pfft.plot(pen='g')
+    ptr = 0
+    pfft.enableAutoRange('xy', True)
+    curve.setData(last_data)
+        
+    def update():
+        peak = np.argmax(last_data)
+        lpeak.setPos(peak)
+        curve.setData(last_data)
 
-def update():
-    global curve,ptr, pfft, ds, lpeak, last_data
-    last_data = ds.getLast()
-    peak = np.argmax(last_data)
-    lpeak.setPos(peak)
-    curve.setData(ds.getLast())
-
-
-    if ptr > 5:
         pfft.enableAutoRange('xy', False)
-    ptr += 1
 
-timer = QtCore.QTimer()
-timer.timeout.connect(update)
-timer.start(20)
+    mainTmr.timeout.connect(update)
+
+#showFFT(win, mainTmr)
+print(last_data)
+## Start Qt event loop unless running in interactive mode or using pyside.
+if __name__ == '__main__':
+    import sys
+    if (sys.flags.interactive != 1) or not hasattr(QtCore, 'PYQT_VERSION'):
+        QtGui.QApplication.instance().exec_()
+
+exit(0)
 
 win.nextRow()
 
@@ -67,7 +77,6 @@ img.setLevels([0,10000])
 img.setLookupTable(lut)
 
 
-
 view.addItem(img)
 view.setAutoVisible(x=True, y=True)
 ## Set initial view bounds
@@ -82,7 +91,7 @@ fps = 0
 img.translate(0,-500)
 
 def updateWaterfall():
-    global img, data, updateTime, fps, last_data
+    global img, data, updateTime, fps 
     view.setYRange(0,-300) 
     data = np.insert(data, -1, np.sqrt(last_data), axis=2)
     data = np.delete(data, 0,2)
@@ -101,9 +110,4 @@ updateWaterfall()
 
 
 
-## Start Qt event loop unless running in interactive mode or using pyside.
-if __name__ == '__main__':
-    import sys
-    if (sys.flags.interactive != 1) or not hasattr(QtCore, 'PYQT_VERSION'):
-        QtGui.QApplication.instance().exec_()
 
