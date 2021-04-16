@@ -64,8 +64,8 @@ class AsyncSerialInput:
         self.data = []
         self.prevData = []
         
-        self.SAMPLE_RATE = 1000
-        self.FFT_SIZE  = 1024
+        self.SAMPLE_RATE = 50000
+        self.FFT_SIZE  = 2048
         
         self.x = threading.Thread(target=self.recieve)
         self.x.start()

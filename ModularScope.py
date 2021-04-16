@@ -66,7 +66,7 @@ class ModularScope():
         global ptr
         ptr = 0
         curve.setData(self.FFT[1], self.FFT[0])
-        pfft.enableAutoRange('xy', True)
+        pfft.enableAutoRange('x', True)
 
         def update():
             global ptr
@@ -75,6 +75,7 @@ class ModularScope():
             curve.setData(self.FFT[1], self.FFT[0])
             if(ptr > 5): 
                 pfft.enableAutoRange('xy', False)
+            
             ptr += 1
 
         self.plots.append(pfft)
@@ -138,7 +139,7 @@ class ModularScope():
         self.consoleTmr = QtCore.QTimer()
         self.consoleTmr.start(100) 
 
-        self.rawFFT = self.sp.getRawFFT()
+        self.rawFFT = self.sp.getHalfBinVals()
         self.FFT = self.sp.getFFT()
         self.PEAKS = self.sp.getPeaks()
 
