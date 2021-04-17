@@ -46,7 +46,7 @@ class ModularScope():
             pp.setText("Homebrew Radar\n" + 
                      "\nSync Rate : " + self.sp.getSyncRate() + 
                      "\nFrame Rate: " + self.fq.getFreq() +
-                     "\nPeak      : " + str(self.PEAKS[np.size(self.PEAKS) - 1]) + 
+                     "\nPeak      : " + str(self.PEAKS[0]) + 
                      "\n----------" +
                      "\nVelocity  : ??? m/s"+
                      "\nRange     : ??? m"
@@ -66,7 +66,7 @@ class ModularScope():
         global ptr
         ptr = 0
         curve.setData(self.FFT[1], self.FFT[0])
-        pfft.enableAutoRange('x', True)
+        pfft.enableAutoRange('xy', True)
 
         def update():
             global ptr
@@ -80,9 +80,31 @@ class ModularScope():
 
         self.plots.append(pfft)
         self.mainTmr.timeout.connect(update)
-    
-    def showWaterfall(self,name):
+   
+
+    def showFFTWaterfall(self, name):
+        view = pg.PlotItem(invertY=True)
+        self.win.addItem(view, colspan=20)
+        img = pg.ImageItem(border='w')
+        pos = np.array([0., 1., 0.5, 0.25, 0.75])
+        color = np.array([[0,255,255,0], [255,255,0,255], [0,0,0,255], (0, 0, 255, 255), (255, 0, 0, 255)], dtype=np.ubyte)
+        cmap = pg.ColorMap(pos, color)
+        lut = cmap.getLookupTable(0.0, 1.0, 10000)
+        img.setLevels([0,10000])
+        img.setLookupTable(lut)
+        img.translate(0,-self.sp.MAX_FFTS)
+        view.addItem(img)
+        img.setImage(np.rot90(self.sp.ffts[:int(self.sp.FFT_SIZE/2)]))
+        view.setXLink(name)
+        img.scale(self.sp.SAMPLE_RATE/self.sp.FFT_SIZE,1)
         
+        def update():
+            img.setImage(np.flip(np.rot90(self.sp.ffts))[:int(self.sp.FFT_SIZE/2)])
+            
+        self.mainTmr.timeout.connect(update)
+
+
+    def showWaterfall(self,name):
         view = pg.PlotItem(invertY=True)
         view.setLabel(axis='left', text='')
         view.setLabel(axis='bottom', text='Frequency')
@@ -91,7 +113,7 @@ class ModularScope():
         self.win.addItem(view, colspan=20)
         
         img = pg.ImageItem(border='w')
-        pos = np.array([0., 1., 0.5, 0.25, 0.75])
+        pos = np.array([0., 1., 0.2, 0.1, 0.75])
         color = np.array([[0,255,255,0], [255,255,0,255], [0,0,0,255], (0, 0, 255, 255), (255, 0, 0, 255)], dtype=np.ubyte)
         cmap = pg.ColorMap(pos, color)
         lut = cmap.getLookupTable(0.0, 1.0, 10000)

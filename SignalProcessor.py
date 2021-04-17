@@ -23,7 +23,7 @@ class SignalProcessor:
     # Buffer the FFT into ffts without exceding MAX_FFTS elements
     def bufferInFFT(self,FFT):
         if(np.shape(self.ffts)[0] < self.MAX_FFTS):
-            self.ffts = np.append(self.ffts,[FFT], axis=0)
+            self.ffts = np.append(self.ffts,[FFT],axis=0)
         else:
             self.ffts = np.roll(self.ffts,1,axis=0)
             self.ffts[0] = FFT
@@ -73,7 +73,7 @@ class SignalProcessor:
 
         self.peaks = np.array([])
 
-        self.ffts = np.array([np.empty(self.ds.getFFTSize())])
+        self.ffts = np.array(self.MAX_FFTS*[np.zeros(self.ds.getFFTSize())])
 
         self.FFT_SIZE = self.ds.getFFTSize()
         self.SAMPLE_RATE = self.ds.getSampleRate()
