@@ -77,7 +77,7 @@ void computeFFT(){
     
     //Prepare the output data for transmission
     for(int i = 0; i < FFT_SIZE; i++){
-      out[i] = sqrt(sReal[i]*sReal[i])+(sImag[i]*sImag[i]);
+      out[i] = sqrt((sReal[i]*sReal[i])+(sImag[i]*sImag[i]));
     }
    
 }

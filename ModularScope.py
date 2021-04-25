@@ -70,7 +70,7 @@ class ModularScope():
 
         def update():
             global ptr
-            peak = self.FFT[1][np.argmax(self.FFT[0])]
+            peak = self.FFT[1][5+np.argmax(self.FFT[0][5:int(self.sp.FFT_SIZE/2)])]
             lpeak.setPos(peak)
             curve.setData(self.FFT[1], self.FFT[0])
             if(ptr > 5): 
@@ -81,6 +81,32 @@ class ModularScope():
         self.plots.append(pfft)
         self.mainTmr.timeout.connect(update)
    
+    def showRangeWaterfall(self, name):
+
+        C = 3e8
+        B = 100e6
+        T = 8.7177e-3
+
+        view = pg.PlotItem(invertY=True)
+        self.win.addItem(view, colspan=20)
+        img = pg.ImageItem(border='w')
+        pos = np.array([0., .25, 0.75, 1.0])
+        color = np.array([[0,0,128,255], [255,255,0,255], [0,0,0,255], (0, 0, 255, 255), (255, 0, 0, 255)], dtype=np.ubyte)
+        cmap = pg.ColorMap(pos, color)
+        lut = cmap.getLookupTable(0.0, 1.0, 10000)
+        img.setLevels([0,10000])
+        img.setLookupTable(lut)
+        img.translate(0,-self.sp.MAX_FFTS)
+        view.addItem(img)
+        img.setImage(np.rot90(self.sp.ffts[:int(self.sp.FFT_SIZE/2)]))
+        #view.setXLink(name)
+        img.scale(((self.sp.SAMPLE_RATE/self.sp.FFT_SIZE) * C * T) / (4*B),1)
+        
+        def update():
+            img.setImage(np.flip(np.rot90(self.sp.ffts))[:int(self.sp.FFT_SIZE/2)])
+            
+        self.mainTmr.timeout.connect(update)
+
 
     def showFFTWaterfall(self, name):
         view = pg.PlotItem(invertY=True)
@@ -92,6 +118,7 @@ class ModularScope():
         lut = cmap.getLookupTable(0.0, 1.0, 10000)
         img.setLevels([0,10000])
         img.setLookupTable(lut)
+        
         img.translate(0,-self.sp.MAX_FFTS)
         view.addItem(img)
         img.setImage(np.rot90(self.sp.ffts[:int(self.sp.FFT_SIZE/2)]))
@@ -166,14 +193,6 @@ class ModularScope():
         self.PEAKS = self.sp.getPeaks()
 
         self.plots = []
-
-        
- 
-        
-        
-
-
-
 
 ## Start Qt event loop unless running in interactive mode or using pyside.
 #if __name__ == '__main__':

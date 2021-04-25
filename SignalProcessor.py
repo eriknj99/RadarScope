@@ -11,8 +11,15 @@ class SignalProcessor:
         self.fq.tick()
         self.bufferInFFT(FFT);     
         self.bufferInPeak(self.computePeak(FFT))
-  
-    # Buffer peak into peaks without exceding MAX_PEAKS elements    
+        self.writeToFile(FFT) 
+
+    def writeToFile(self,FFT):
+        line = ""
+        for i  in FFT:
+            line += str(i) + ","
+        self.OUTPUT_FILE.write(line + "\n")
+
+    # Buffer peak into peaks without exceding MAX_PEAKS elements
     def bufferInPeak(self,peak):
         if(np.size(self.peaks) < self.MAX_PEAKS):
             self.peaks = np.append(peak, self.peaks)
@@ -52,7 +59,7 @@ class SignalProcessor:
     
     # Appends the frequency of the peak to self.peaks for a single FFT entry 
     def computePeak(self, FFT):
-        return self.binToFreq(np.argmax(FFT)) 
+        return self.binToFreq(5+np.argmax(FFT[5:int(self.FFT_SIZE/2)])) 
     
     # Get a 1D array of all calculated peaks
     def getPeaks(self):
@@ -62,6 +69,8 @@ class SignalProcessor:
         return self.fq.getFreq()
 
     def __init__(self):
+
+        self.OUTPUT_FILE = open("output.csv", "a")
         
         self.MAX_FFTS = 100
         self.MAX_PEAKS = 100
