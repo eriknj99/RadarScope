@@ -11,7 +11,8 @@ class SignalProcessor:
         self.fq.tick()
         self.bufferInFFT(FFT);     
         self.bufferInPeak(self.computePeak(FFT))
-        self.writeToFile(FFT) 
+        self.ranges = self.computeRanges()
+        #self.writeToFile(FFT) 
 
     def writeToFile(self,FFT):
         line = ""
@@ -56,7 +57,15 @@ class SignalProcessor:
     def getFFT(self):
         out =  np.array([(self.getHalfBinVals()), (self.getFrequencies())], dtype=float)
         return out
-    
+    def computeRanges(self):
+        C = 3e8
+        B = 100e6
+        T = 8.7177e-3
+        return self.getPeaks() * (((self.SAMPLE_RATE/self.FFT_SIZE) * C * T) / (4*B))
+
+    def getRanges(self):
+        return self.ranges
+
     # Appends the frequency of the peak to self.peaks for a single FFT entry 
     def computePeak(self, FFT):
         return self.binToFreq(5+np.argmax(FFT[5:int(self.FFT_SIZE/2)])) 
@@ -72,8 +81,8 @@ class SignalProcessor:
 
         self.OUTPUT_FILE = open("output.csv", "a")
         
-        self.MAX_FFTS = 100
-        self.MAX_PEAKS = 100
+        self.MAX_FFTS = 200
+        self.MAX_PEAKS = 200
 
         #self.numFFTs = 0
 
@@ -81,7 +90,7 @@ class SignalProcessor:
         self.fq = FrequencyCounter.FrequencyCounter()
 
         self.peaks = np.array([])
-
+        self.ranges = np.array([])
         self.ffts = np.array(self.MAX_FFTS*[np.zeros(self.ds.getFFTSize())])
 
         self.FFT_SIZE = self.ds.getFFTSize()
