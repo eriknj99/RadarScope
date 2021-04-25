@@ -8,6 +8,11 @@ const int FFT_SIZE = 2048;            // Number of FFT Bins
 
 byte SOT[] = {0x02, 0x03, 0x04, 0x05}; // The Start Of Transmission packet
 
+int mode = 1; // Determines what data is transmitted
+//0 = Magnitude of the FFT (SOT + float[FFT_SIZE])
+//1 = Raw FFT (SOT + float[2*FFT_SIZE]) 
+
+
 ADC *adc = new ADC();
 
 arduinoFFT FFT = arduinoFFT();
@@ -21,7 +26,11 @@ int side = 0;
 int sideLast = 0;
 double sReal[FFT_SIZE];
 double sImag[FFT_SIZE];
-float out[FFT_SIZE];
+
+// I cant dynamically allocate a float array so I have to create 2. One for each mode.
+float out0[FFT_SIZE];  
+float out1[FFT_SIZE * 2];
+
 
 int timer = 0; // This is used by the helper timer functions.
 
@@ -74,18 +83,37 @@ void computeFFT(){
     FFT.ComplexToMagnitude(sReal, sImag, FFT_SIZE);
     
     //double peak = FFT.MajorPeak(vReal, FFT_SIZE, SAMPLING_FREQUENCY);
-    
-    //Prepare the output data for transmission
+}
+
+// Compute the magnitude of the FFT 
+// Mode0
+void computeMag(){
     for(int i = 0; i < FFT_SIZE; i++){
-      out[i] = sqrt((sReal[i]*sReal[i])+(sImag[i]*sImag[i]));
+      out0[i] = sqrt((sReal[i]*sReal[i])+(sImag[i]*sImag[i]));
     }
-   
+}
+
+// Concatinate Real and Imag components into  out1
+// Mode1
+void prepairRawOutput(){
+    for(int i = 0; i < FFT_SIZE; i++){
+      out1[i] = sReal[i];
+    }
+    for(int i = 0; i < FFT_SIZE; i++){
+      out1[FFT_SIZE + i] = sImag[i];
+    }
 }
 
 //Transmit the output of the FFT as a byte array with a start of transmission packet: SOT
 void transmit(){
+    
     Serial.write(SOT,sizeof(SOT));
-    Serial.write((byte*)&out, sizeof(float) * FFT_SIZE);
+    if(mode == 0){
+      Serial.write((byte*)&out0, sizeof(float) * FFT_SIZE);
+    }
+    if(mode == 1){
+      Serial.write((byte*)&out1, sizeof(float) * FFT_SIZE * 2); 
+    }
 }
 
 void loop() {
@@ -94,6 +122,14 @@ void loop() {
     sideLast = side;
     populate();
     computeFFT();
+    
+    if(mode == 0){
+      computeMag();
+    }
+    if(mode == 1){
+      prepairRawOutput();
+    }
+    
     transmit();
   }
 }

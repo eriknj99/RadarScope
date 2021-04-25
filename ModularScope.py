@@ -49,7 +49,7 @@ class ModularScope():
                      "\nPeak      : " + str(self.PEAKS[0]) + 
                      "\n----------" +
                      "\nVelocity  : ??? m/s"+
-                     "\nRange     : " + str(self.sp.getRanges()[0])
+                "\nRange     : " + str(self.sp.getRanges()[0]) + " m"
             )
 
         self.consoleTmr.timeout.connect(update)

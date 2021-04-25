@@ -9,16 +9,35 @@ class SignalProcessor:
     # This function is called by AsyncSerialInput every time a new FFT is recieved. It stores the FFT and calls all signal processing functions 
     def FFTSync(self, FFT):
         self.fq.tick()
+        
+        self.real = self.ds.getReal()
+        self.imag = self.ds.getImag()
+
         self.bufferInFFT(FFT);     
         self.bufferInPeak(self.computePeak(FFT))
         self.ranges = self.computeRanges()
-        #self.writeToFile(FFT) 
+        self.writeRawToFile() 
 
-    def writeToFile(self,FFT):
+    def writeMagToFile(self,FFT):
         line = ""
         for i  in FFT:
             line += str(i) + ","
         self.OUTPUT_FILE.write(line + "\n")
+
+    def writeRawToFile(self):
+        line = ""
+        for i  in self.real:
+            line += str(i) + ","
+        self.OUTPUT_REAL.write(line + "\n")
+
+        line = ""
+
+        for i  in self.imag:
+            line += str(i) + ","
+        self.OUTPUT_IMAG.write(line + "\n")
+
+
+
 
     # Buffer peak into peaks without exceding MAX_PEAKS elements
     def bufferInPeak(self,peak):
@@ -61,7 +80,7 @@ class SignalProcessor:
         C = 3e8
         B = 100e6
         T = 8.7177e-3
-        return self.getPeaks() * (((self.SAMPLE_RATE/self.FFT_SIZE) * C * T) / (4*B))
+        return self.getPeaks() * ((C * T) / (4*B))
 
     def getRanges(self):
         return self.ranges
@@ -80,7 +99,9 @@ class SignalProcessor:
     def __init__(self):
 
         self.OUTPUT_FILE = open("output.csv", "a")
-        
+        self.OUTPUT_REAL = open("real.csv", "a")
+        self.OUTPUT_IMAG = open("imag.csv", "a")
+
         self.MAX_FFTS = 200
         self.MAX_PEAKS = 200
 
@@ -92,6 +113,9 @@ class SignalProcessor:
         self.peaks = np.array([])
         self.ranges = np.array([])
         self.ffts = np.array(self.MAX_FFTS*[np.zeros(self.ds.getFFTSize())])
+        
+        self.real = np.array([])
+        self.imag = np.array([])
 
         self.FFT_SIZE = self.ds.getFFTSize()
         self.SAMPLE_RATE = self.ds.getSampleRate()
