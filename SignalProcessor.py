@@ -1,7 +1,7 @@
 import AsyncSerialInput
 import FrequencyCounter
 import numpy as np
-
+import RadarSP
 
 
 class SignalProcessor:
@@ -9,15 +9,18 @@ class SignalProcessor:
     # This function is called by AsyncSerialInput every time a new FFT is recieved. It stores the FFT and calls all signal processing functions 
     def FFTSync(self, FFT):
         self.fq.tick()
-        
         self.real = self.ds.getReal()
         self.imag = self.ds.getImag()
 
         self.bufferInFFT(FFT);     
         self.bufferInPeak(self.computePeak(FFT))
-        self.ranges = self.computeRanges()
-        self.writeRawToFile() 
-
+        self.writeRawToFile()
+        spData = RadarSP.SP(self.FFT_SIZE, self.SAMPLE_RATE, self.ffts, self.real, self.imag)
+        self.range = spData[:1024]
+        self.bufferInRanges(self.range)
+        self.vels = spData[1024:]
+        
+    
     def writeMagToFile(self,FFT):
         line = ""
         for i  in FFT:
@@ -36,9 +39,6 @@ class SignalProcessor:
             line += str(i) + ","
         self.OUTPUT_IMAG.write(line + "\n")
 
-
-
-
     # Buffer peak into peaks without exceding MAX_PEAKS elements
     def bufferInPeak(self,peak):
         if(np.size(self.peaks) < self.MAX_PEAKS):
@@ -54,6 +54,14 @@ class SignalProcessor:
         else:
             self.ffts = np.roll(self.ffts,1,axis=0)
             self.ffts[0] = FFT
+
+     # Buffer the range into ranges without exceding MAX_FFTS elements
+    def bufferInRanges(self,range):
+        if(np.shape(self.ranges)[0] < self.MAX_RANGES):
+            self.ranges = np.append(self.ranges,[range],axis=0)
+        else:
+            self.ranges = np.roll(self.ranges,1,axis=0)
+            self.ranges[0] = range
 
     # Returns the last recieved FFT packet
     def getHalfBinVals(self):
@@ -85,6 +93,9 @@ class SignalProcessor:
     def getRanges(self):
         return self.ranges
 
+    def getVels(self):
+        return self.vels
+
     # Appends the frequency of the peak to self.peaks for a single FFT entry 
     def computePeak(self, FFT):
         return self.binToFreq(5+np.argmax(FFT[5:int(self.FFT_SIZE/2)])) 
@@ -97,13 +108,13 @@ class SignalProcessor:
         return self.fq.getFreq()
 
     def __init__(self):
-
         self.OUTPUT_FILE = open("output.csv", "a")
         self.OUTPUT_REAL = open("real.csv", "a")
         self.OUTPUT_IMAG = open("imag.csv", "a")
 
         self.MAX_FFTS = 200
         self.MAX_PEAKS = 200
+        self.MAX_RANGES = 500
 
         #self.numFFTs = 0
 
@@ -111,7 +122,8 @@ class SignalProcessor:
         self.fq = FrequencyCounter.FrequencyCounter()
 
         self.peaks = np.array([])
-        self.ranges = np.array([])
+        self.ranges = np.array(self.MAX_RANGES*[np.zeros(int(self.ds.getFFTSize()/2))])
+        self.vels = np.array([])
         self.ffts = np.array(self.MAX_FFTS*[np.zeros(self.ds.getFFTSize())])
         
         self.real = np.array([])
@@ -119,8 +131,6 @@ class SignalProcessor:
 
         self.FFT_SIZE = self.ds.getFFTSize()
         self.SAMPLE_RATE = self.ds.getSampleRate()
-        
-        
 
         #Wait until the first FFT packet becomes available
         self.ds.getNext()

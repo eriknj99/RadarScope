@@ -9,11 +9,9 @@ import time
 sp = SignalProcessor.SignalProcessor()
 
 ms1 = ModularScope.ModularScope(sp)
-ms1.showFFT("fft")
-ms1.showPeaks()
-ms1.splitV()
+#ms1.showFFT("fft")
+#ms1.splitV()
 ms1.showRangeWaterfall("fft")
-ms1.showConsole()
 ms1.show()
 
 
