@@ -18,7 +18,8 @@ class SignalProcessor:
         spData = RadarSP.SP(self.FFT_SIZE, self.SAMPLE_RATE, self.ffts, self.real, self.imag)
         self.range = spData[:1024]
         self.bufferInRanges(self.range)
-        self.vels = spData[1024:]
+        vel = spData[1024:]
+        self.bufferInVels(vel)
         
     
     def writeMagToFile(self,FFT):
@@ -55,13 +56,22 @@ class SignalProcessor:
             self.ffts = np.roll(self.ffts,1,axis=0)
             self.ffts[0] = FFT
 
-     # Buffer the range into ranges without exceding MAX_FFTS elements
+    # Buffer the range into ranges without exceding MAX_FFTS elements
     def bufferInRanges(self,range):
         if(np.shape(self.ranges)[0] < self.MAX_RANGES):
             self.ranges = np.append(self.ranges,[range],axis=0)
         else:
             self.ranges = np.roll(self.ranges,1,axis=0)
             self.ranges[0] = range
+    
+    # Buffer the vel into vels without exceding MAX_VELS elements
+    def bufferInVels(self,vel):
+        if(np.shape(self.vels)[0] < self.MAX_VELS):
+            self.vels = np.append(self.vels,[vel],axis=0)
+        else:
+            self.vels = np.roll(self.vels,1,axis=0)
+            self.vels[0] = vel
+
 
     # Returns the last recieved FFT packet
     def getHalfBinVals(self):
@@ -115,7 +125,7 @@ class SignalProcessor:
         self.MAX_FFTS = 200
         self.MAX_PEAKS = 200
         self.MAX_RANGES = 500
-
+        self.MAX_VELS = 500
         #self.numFFTs = 0
 
         self.ds = AsyncSerialInput.AsyncSerialInput(self)
@@ -123,7 +133,7 @@ class SignalProcessor:
 
         self.peaks = np.array([])
         self.ranges = np.array(self.MAX_RANGES*[np.zeros(int(self.ds.getFFTSize()/2))])
-        self.vels = np.array([])
+        self.vels = np.array(self.MAX_VELS*[np.zeros(108)])
         self.ffts = np.array(self.MAX_FFTS*[np.zeros(self.ds.getFFTSize())])
         
         self.real = np.array([])

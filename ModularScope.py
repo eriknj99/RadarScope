@@ -91,21 +91,53 @@ class ModularScope():
         view.showGrid(x=True,y=True)
         self.win.addItem(view, colspan=20)
         img = pg.ImageItem(border='w')
-        pos = np.array([0., .25, 0.5, 0.75, 1])
-        color = np.array([[0,0,128,128], [255, 0, 0, 255], [0,255,0,255], [255, 255, 0, 255],[255,0,0,255]], dtype=np.ubyte)
+        #pos = np.flip(np.array([0.,  5, 0.75, 0.9, 1]))
+        #color =(np.array([[255,0,0,255], [255, 165, 0, 255], [255,255,0,0], [0, 255, 0, 0],[0,0,255,0]], dtype=np.ubyte))
+        pos = np.array([0., .6, 0.8, 0.9, 1])
+        color = np.array([[0,0,128,128], [0, 0, 255, 255], [0,255,0,255], [0, 255, 0, 255],[255,255,0,255]], dtype=np.ubyte)
+
         cmap = pg.ColorMap(pos, color)
         lut = cmap.getLookupTable(0.0, 1.0, 100000)
-        img.setLevels([0,500])
+        img.setLevels([30,100])
         img.setLookupTable(lut)
         img.translate(0,-self.sp.MAX_RANGES)
         view.addItem(img)
         img.setImage(np.rot90(np.rot90(np.rot90(self.sp.getRanges()))),autoLevels=False)
         #view.setXLink(name)
-        #img.scale(((self.sp.SAMPLE_RATE/self.sp.FFT_SIZE) * C * T) / (4*B),1)
+        img.scale(((self.sp.SAMPLE_RATE/self.sp.FFT_SIZE) * C * T) / (4*B),1)
         
         def update():
             #img.setImage(np.flip(np.rot90(self.sp.ffts))[:int(self.sp.FFT_SIZE/2)], autoLevels=False)
             img.setImage(np.rot90(np.rot90(np.rot90(self.sp.getRanges()))),autoLevels=False)
+        self.mainTmr.timeout.connect(update)
+    
+    def showVelWaterfall(self, name):
+        C = 3e8
+        B = 100e6
+        T = 8.7177e-3
+
+        view = pg.PlotItem(invertY=True)
+        view.showGrid(x=True,y=True)
+        self.win.addItem(view, colspan=20)
+        img = pg.ImageItem(border='w')
+        #pos = np.flip(np.array([0.,  5, 0.75, 0.9, 1]))
+        #color =(np.array([[255,0,0,255], [255, 165, 0, 255], [255,255,0,0], [0, 255, 0, 0],[0,0,255,0]], dtype=np.ubyte))
+        pos = np.array([0., .6, 0.8, 0.9, 1])
+        color = np.array([[0,0,128,128], [0, 0, 255, 255], [0,255,0,255], [0, 255, 0, 255],[255,255,0,255]], dtype=np.ubyte)
+
+        cmap = pg.ColorMap(pos, color)
+        lut = cmap.getLookupTable(0.0, 1.0, 100000)
+        img.setLevels([0,200])
+        img.setLookupTable(lut)
+        img.translate(0,-self.sp.MAX_VELS)
+        view.addItem(img)
+        img.setImage(np.rot90(np.rot90(np.rot90(self.sp.getVels()))),autoLevels=False)
+        #view.setXLink(name)
+        img.scale((10/108),1)
+        
+        def update():
+            #img.setImage(np.flip(np.rot90(self.sp.ffts))[:int(self.sp.FFT_SIZE/2)], autoLevels=False)
+            img.setImage(np.rot90(np.rot90(np.rot90(self.sp.getVels()))),autoLevels=False)
         self.mainTmr.timeout.connect(update)
 
 
