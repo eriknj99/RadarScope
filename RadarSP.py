@@ -6,8 +6,8 @@ import matplotlib as mpl
 
 # Import MATLAB table with constants fitted for scaling function
 from scipy.io import loadmat
-x = loadmat('beta_n4.mat')
-beta = loadmat('beta_n4.mat')['beta']
+x = loadmat('beta_n4.mat.old')
+beta = loadmat('beta_n4.mat.old')['beta']
 
 # number of degrees for poly solve
 n = 4.
@@ -102,7 +102,7 @@ def getRange(fft_size, sample_rate, FFT_mat):
     # fr is return frequency, B is bandwidth, T is modulation period (Up and Down chirp time
     
     # Return sccaled range array weighted in dBv elements in (-inf, 40]
-    # return dBv(Rscaled)
+    #return dBv(R)
     
     # Return elements in (0, 100]
     return Rscaled
@@ -112,10 +112,11 @@ def scaleR(A):
     for ii in range(np.size(A)):
         item = A[ii]
         val = expFit(ii)
+        
         if item > val:
             scaled[ii] = 100
         else: 
-            scaled[ii] = 100*item/val
+            scaled[ii] = 100*(item/val)**2
     return scaled
 
 
