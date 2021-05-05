@@ -49,9 +49,12 @@ while(not signalProcessor.data_stream_started):
 signal.signal(signal.SIGINT, signal.SIG_DFL)
 ms1 = ModularScope.ModularScope(signalProcessor)
 ms1.showFFT("fft")
+ms1.showPeaks()
 ms1.splitV()
-ms1.showVelWaterfall("fft")
-ms1.showRangeWaterfall("fft")
+ms1.showFFTWaterfall("fft")
+ms1.showConsole()
+#ms1.showVelWaterfall("fft")
+#ms1.showRangeWaterfall("fft")
 ms1.show()
 
 
@@ -60,7 +63,6 @@ def signal_handler(sig, frame):
     Logger.info("Cleaning up...")
     signalProcessor.cleanup()
     dataInput.cleanup()
-    ms1.cleanup()
     Logger.info("Goodbye.")
     # This will cause a thread exception. I don't care so dont print anything.
     try:

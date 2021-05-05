@@ -1,6 +1,7 @@
 import threading
 import numpy as np
 import time 
+import math
 
 import FrequencyCounter
 import RadarSP
@@ -9,12 +10,12 @@ import Logger
 class SignalProcessor:
  
     # This function is called by AsyncSerialInput every time a new FFT is recieved. It stores the FFT and unblocks the signal processor  
-    def FFTSync(self, mag, real, imag):
+    def FFTSync(self, real, imag):
         self.fq.tick()
         self.real = real 
         self.imag = imag 
-        self.mag = mag;    
-        self.data_stream_started = True # This will unblock 
+        
+        self.data_stream_started = True # Unblock the GUI
         self.new_data = True # Unblock Signal Processor
 
 
@@ -23,14 +24,14 @@ class SignalProcessor:
     def run(self):
 
         while(True):
-            # Wait until new data is recieved 
+            # Wait until new data is recieved while checking if the thread has been stopped 
             while(not self.new_data):
                 if(self.stop_thread):
                    return 
-
                 time.sleep(0)
            
             self.new_data = False # Block the signal processor until the next new data set is recieved
+            self.mag = self.getMagnitude(self.real, self.imag)
             self.bufferInFFT(self.mag)
             self.bufferInPeak(self.computePeak(self.mag))
             
@@ -39,18 +40,6 @@ class SignalProcessor:
             self.bufferInRanges(range)
             vel = spData[1024:]
             self.bufferInVels(vel)
-
-    def writeRawToFile(self):
-        line = ""
-        for i  in self.real:
-            line += str(i) + ","
-        self.OUTPUT_REAL.write(line + "\n")
-
-        line = ""
-
-        for i  in self.imag:
-            line += str(i) + ","
-        self.OUTPUT_IMAG.write(line + "\n")
 
     # Buffer peak into peaks without exceding MAX_PEAKS elements
     def bufferInPeak(self,peak):
@@ -85,6 +74,13 @@ class SignalProcessor:
             self.vels[0] = vel
 
 
+    # Calculate the magnitude of the FFT given its real and imaginary components
+    def getMagnitude(self,real, imag):
+        mag = np.zeros(self.FFT_SIZE)
+        for i in range(self.FFT_SIZE):
+            mag[i] = math.sqrt((real[i]**2) + (imag[i]**2)) 
+        return mag
+    
     # Returns the last recieved FFT packet
     def getHalfBinVals(self):
         return self.ffts[0][:int(self.FFT_SIZE/2)]

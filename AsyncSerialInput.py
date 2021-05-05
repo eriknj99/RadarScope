@@ -10,6 +10,7 @@ import DataManager
 
 class AsyncSerialInput:
     #Serial Params
+    # TODO: Make these optional instance variables
     serialPort = "/dev/ttyACM0"
     baudrate = 115200
     SOT = [0x02,0x03,0x04,0x05]
@@ -20,13 +21,7 @@ class AsyncSerialInput:
     def getSampleRate(self):
         return self.SAMPLE_RATE
 
-    # Calculate the magnitude of the FFT given its real and imaginary components
-    def getMagnitude(self,real, imag):
-        mag = np.zeros(self.FFT_SIZE)
-        for i in range(self.FFT_SIZE):
-            mag[i] = math.sqrt((real[i]**2) + (imag[i]**2)) 
-        return mag
-
+    
     # Parse the input data for MODE1 + calculate and return the magnitude
     def parse(self, input):
         # Split the input array into real and imag components
@@ -34,11 +29,6 @@ class AsyncSerialInput:
             self.real[i] = input[i]
         for i in range(self.FFT_SIZE):
             self.imag[i] = input[self.FFT_SIZE + i]
-        
-        # Calculate the magnitude for compatability
-        mag = getMagnitude(self.real, self.imag) 
-        
-        return mag    
     
     def calculateReplaySleepTime(self):
         return self.FFT_SIZE / self.SAMPLE_RATE
@@ -46,7 +36,7 @@ class AsyncSerialInput:
     def replayDataset(self):
         Logger.info("Loading replay dataset...")
         # Read in the data 
-        data = DataManager.readData(self.replayFilePrefix)
+        data = self.dataManager.readData()
         dreal = data[0,:]
         dimag = data[1,:]
        
@@ -66,9 +56,8 @@ class AsyncSerialInput:
                     
                 self.real = dreal[i]
                 self.imag = dimag[i]
-                mag = self.getMagnitude(self.real, self.imag)
-                self.data = mag
-                self.sp.FFTSync(mag, self.real, self.imag)
+
+                self.sp.FFTSync(self.real, self.imag)
                 time.sleep(sleepTime)
 
     def recieveSerial(self):
@@ -101,21 +90,21 @@ class AsyncSerialInput:
 
             # Set the data variable to the recieved data.
             if(self.MODE == 0):    
-                self.mag = f
+                Logger.error("MODE 0 is no longer supported. Please switch to MODE 1...")
             if(self.MODE == 1):
-                self.mag = self.parse(f)
+                self.parse(f)
 
             # Save the data if enabled 
-            if(save):
-                DataManager.writeData(self.saveFilePrefix, self.real, self.imag)
+            if(self.save):
+               self.dataManager.writeData(self.real, self.imag)
 
-            self.sp.FFTSync(self.mag, self.real, self.imag)
+            self.sp.FFTSync(self.real, self.imag)
 
     def cleanup(self):
        self.stop_thread = True
        self.dataThread.join() 
 
-    def __init__(self, sp, FFT_SIZE, SAMPLE_RATE, MODE = 1, replay=False, replayFilePrefix="", save=False, saveFilePrefix=""):
+    def __init__(self, sp, FFT_SIZE, SAMPLE_RATE, replay=False, replayFilePrefix="", save=False, saveFilePrefix=""):
 
         self.sp = sp
         self.mag = []
@@ -127,17 +116,19 @@ class AsyncSerialInput:
         self.saveFilePrefix = saveFilePrefix
 
         self.stop_thread = False
-       
-        if(save):
-            DataManager.initFile(saveFilePrefix)
+        
 
-        self.MODE = MODE
+        if(save):
+            self.dataManager = DataManager.DataManager(self.saveFilePrefix)   
+            self.dataManager.initFiles()
+        if(replay):
+            self.dataManager = DataManager.DataManager(self.replayFilePrefix)   
+
+        self.MODE = 1 # DEPRICATED: The signal processor no longer handles MODE 0
+        
         self.SAMPLE_RATE = SAMPLE_RATE
         self.FFT_SIZE  = FFT_SIZE 
-        if(self.MODE == 0):
-            self.PACKET_SIZE = self.FFT_SIZE 
-        if(self.MODE == 1):
-            self.PACKET_SIZE = self.FFT_SIZE * 2 
+        self.PACKET_SIZE = self.FFT_SIZE * 2 
 
 
         self.real = np.zeros(self.FFT_SIZE)

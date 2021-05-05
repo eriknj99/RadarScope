@@ -46,11 +46,7 @@ class ModularScope():
             pp.setText("Homebrew Radar\n" + 
                      "\nSync Rate : " + self.sp.getSyncRate() + 
                      "\nFrame Rate: " + self.fq.getFreq() +
-                     "\nPeak      : " + str(self.PEAKS[0]) + 
-                     "\n----------" +
-                     "\nVelocity  : ??? m/s"+
-                "\nRange     : " + str(self.sp.getRanges()[0]) + " m"
-            )
+                     "\nPeak      : " + str(self.PEAKS[0])) 
 
         self.consoleTmr.timeout.connect(update)
 
