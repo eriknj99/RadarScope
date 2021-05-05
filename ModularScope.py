@@ -87,10 +87,6 @@ class ModularScope():
         view.showGrid(x=True,y=True)
         self.win.addItem(view, colspan=20)
         img = pg.ImageItem(border='w')
-        #pos = np.flip(np.array([0.,  5, 0.75, 0.9, 1]))
-        #color =(np.array([[255,0,0,255], [255, 165, 0, 255], [255,255,0,0], [0, 255, 0, 0],[0,0,255,0]], dtype=np.ubyte))
-        #pos = np.array([0., .6, 0.8, 0.9, 1])
-        #color = np.array([[0,0,128,128], [0, 0, 255, 255], [0,255,0,255], [0, 255, 0, 255],[255,255,0,255]], dtype=np.ubyte)
 
         histogram = pg.HistogramLUTItem()
         histogram.setImageItem(img)
