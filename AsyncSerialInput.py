@@ -5,6 +5,8 @@ import threading
 import time
 import numpy as np
 import math
+import Logger
+import DataManager
 
 class AsyncSerialInput:
     #Serial Params
@@ -34,7 +36,14 @@ class AsyncSerialInput:
     # This is where you should access the recieved data. You can querry this function whenever you want. It will always be in sync.
     def getLast(self):
         return np.asarray(self.data)[:int(self.FFT_SIZE/2)]
-    
+  
+    # Calculate the magnitude of the FFT given its real and imaginary components
+    def getMagnitude(self,real, imag):
+        mag = np.zeros(self.FFT_SIZE)
+        for i in range(self.FFT_SIZE):
+            mag[i] = math.sqrt((real[i]**2) + (imag[i]**2)) 
+        return mag
+
     # Parse the input data for MODE1 + calculate and return the magnitude
     def parse(self, input):
         # Split the input array into real and imag components
@@ -43,15 +52,40 @@ class AsyncSerialInput:
         for i in range(self.FFT_SIZE):
             self.imag[i] = input[self.FFT_SIZE + i]
         
-        mag = np.zeros(self.FFT_SIZE)
-
         # Calculate the magnitude for compatability
-        for i in range(self.FFT_SIZE):
-            mag[i] = math.sqrt((self.real[i]**2) + (self.imag[i]**2)) 
+        mag = getMagnitude(self.real, self.imag) 
         
         return mag    
-        
-        
+    
+    def calculateReplaySleepTime(self):
+        return self.FFT_SIZE / self.SAMPLE_RATE
+
+    def replay(self):
+        Logger.info("Loading Replay Data...")
+        # Read in the data 
+        data = DataManager.readData("runaway")
+        dreal = data[0,:]
+        dimag = data[1,:]
+       
+        # Make sure the data is the correct length.
+        # Removes the first column of zeros from old runs if present
+        dreal = dreal[:,len(dreal[0])-self.FFT_SIZE:]
+        dimag = dimag[:,len(dimag[0])-self.FFT_SIZE:]
+
+        sleepTime = self.calculateReplaySleepTime()
+
+        while(True):
+            Logger.info("Replaying data...")
+            for i in range(min(len(dreal),len(dimag))):
+                self.real = dreal[i]
+                self.imag = dimag[i]
+                mag = self.getMagnitude(self.real, self.imag)
+                self.data = mag
+                self.sp.FFTSync(mag, self.real, self.imag)
+                time.sleep(sleepTime)
+                
+
+
     def recieve(self):
         try:
             ser = serial.Serial(self.serialPort, self.baudrate)
@@ -78,14 +112,12 @@ class AsyncSerialInput:
             # Set the data variable to the recieved data.
             if(self.MODE == 0):    
                 self.data = f
-                print(np.shape(self.data))
             if(self.MODE == 1):
                 self.data = self.parse(f)
-                print(str(np.shape(self.real)) + "\timag:" + str(np.shape(self.imag )))
 
-            self.sp.FFTSync(self.data)
+            #self.sp.FFTSync(self.data)
 
-    def __init__(self, sp):
+    def __init__(self, sp, replay=False):
 
         self.sp = sp
 
@@ -105,7 +137,11 @@ class AsyncSerialInput:
         self.real = np.zeros(self.FFT_SIZE)
         self.imag = np.zeros(self.FFT_SIZE)
 
-        self.x = threading.Thread(target=self.recieve)
+        if(replay):
+            self.x = threading.Thread(target=self.replay)
+        else:
+            self.x = threading.Thread(target=self.recieve)
+        
         self.x.start()
 
 

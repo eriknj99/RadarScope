@@ -6,8 +6,8 @@ import matplotlib as mpl
 
 # Import MATLAB table with constants fitted for scaling function
 from scipy.io import loadmat
-x = loadmat('beta_n4.mat.old')
-beta = loadmat('beta_n4.mat.old')['beta']
+x = loadmat('mats/beta_n4.mat')
+beta = loadmat('mats/beta_n4.mat')['beta']
 
 # number of degrees for poly solve
 n = 4.

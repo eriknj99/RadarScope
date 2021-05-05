@@ -1,32 +1,40 @@
-import AsyncSerialInput
-import FrequencyCounter
+import threading
 import numpy as np
-import RadarSP
+import time 
 
+import FrequencyCounter
+import RadarSP
+import Logger
 
 class SignalProcessor:
  
-    # This function is called by AsyncSerialInput every time a new FFT is recieved. It stores the FFT and calls all signal processing functions 
-    def FFTSync(self, FFT):
+    # This function is called by AsyncSerialInput every time a new FFT is recieved. It stores the FFT and unblocks the signal processor  
+    def FFTSync(self, mag, real, imag):
         self.fq.tick()
-        self.real = self.ds.getReal()
-        self.imag = self.ds.getImag()
+        self.real = real 
+        self.imag = imag 
+        self.mag = mag;     
+        self.new_data = True # Unblock Signal Processor
 
-        self.bufferInFFT(FFT);     
-        self.bufferInPeak(self.computePeak(FFT))
-        self.writeRawToFile()
-        spData = RadarSP.SP(self.FFT_SIZE, self.SAMPLE_RATE, self.ffts, self.real, self.imag)
-        self.range = spData[:1024]
-        self.bufferInRanges(self.range)
-        vel = spData[1024:]
-        self.bufferInVels(vel)
-        
-    
-    def writeMagToFile(self,FFT):
-        line = ""
-        for i  in FFT:
-            line += str(i) + ","
-        self.OUTPUT_FILE.write(line + "\n")
+
+    # Perform all signal processing every time new data becomes available.
+    # The time this function takes to execute must be shorter than the time between recieved packets!
+    def run(self):
+
+        while(True):
+            # Wait until new data is recieved 
+            while(not self.new_data):
+                time.sleep(0)
+           
+            self.new_data = False # Block the signal processor until the next new data set is recieved
+            self.bufferInFFT(self.mag)
+            self.bufferInPeak(self.computePeak(self.mag))
+            
+            spData = RadarSP.SP(self.FFT_SIZE, self.SAMPLE_RATE, self.ffts, self.real, self.imag)
+            range = spData[:1024]
+            self.bufferInRanges(range)
+            vel = spData[1024:]
+            self.bufferInVels(vel)
 
     def writeRawToFile(self):
         line = ""
@@ -117,7 +125,7 @@ class SignalProcessor:
     def getSyncRate(self):
         return self.fq.getFreq()
 
-    def __init__(self):
+    def __init__(self, fftSize, sampleRate):
         self.OUTPUT_FILE = open("output.csv", "a")
         self.OUTPUT_REAL = open("real.csv", "a")
         self.OUTPUT_IMAG = open("imag.csv", "a")
@@ -127,23 +135,27 @@ class SignalProcessor:
         self.MAX_RANGES = 500
         self.MAX_VELS = 500
         #self.numFFTs = 0
-
-        self.ds = AsyncSerialInput.AsyncSerialInput(self)
+       
+        self.FFT_SIZE = fftSize 
+        self.SAMPLE_RATE = sampleRate 
+        
         self.fq = FrequencyCounter.FrequencyCounter()
 
         self.peaks = np.array([])
-        self.ranges = np.array(self.MAX_RANGES*[np.zeros(int(self.ds.getFFTSize()/2))])
+        self.ranges = np.array(self.MAX_RANGES*[np.zeros(int(self.FFT_SIZE/2))])
         self.vels = np.array(self.MAX_VELS*[np.zeros(108)])
-        self.ffts = np.array(self.MAX_FFTS*[np.zeros(self.ds.getFFTSize())])
+        self.ffts = np.array(self.MAX_FFTS*[np.zeros(self.FFT_SIZE)])
         
         self.real = np.array([])
         self.imag = np.array([])
+        self.mag = np.array([])
 
-        self.FFT_SIZE = self.ds.getFFTSize()
-        self.SAMPLE_RATE = self.ds.getSampleRate()
+        self.new_data = False
 
-        #Wait until the first FFT packet becomes available
-        self.ds.getNext()
+        self.spThread = threading.Thread(target=self.run)
+        self.spThread.start()
+
+ 
     
         
 
