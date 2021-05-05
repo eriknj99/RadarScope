@@ -205,6 +205,9 @@ class ModularScope():
     def show(self):
         QtGui.QApplication.instance().exec_()
 
+    def cleanup(self):
+        self.app.quit()
+
     def __init__(self, sigproc):
         self.sp = sigproc 
         self.app = QtGui.QApplication([])

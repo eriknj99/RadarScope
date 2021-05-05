@@ -13,7 +13,8 @@ class SignalProcessor:
         self.fq.tick()
         self.real = real 
         self.imag = imag 
-        self.mag = mag;     
+        self.mag = mag;    
+        self.data_stream_started = True # This will unblock 
         self.new_data = True # Unblock Signal Processor
 
 
@@ -24,6 +25,9 @@ class SignalProcessor:
         while(True):
             # Wait until new data is recieved 
             while(not self.new_data):
+                if(self.stop_thread):
+                   return 
+
                 time.sleep(0)
            
             self.new_data = False # Block the signal processor until the next new data set is recieved
@@ -125,11 +129,11 @@ class SignalProcessor:
     def getSyncRate(self):
         return self.fq.getFreq()
 
-    def __init__(self, fftSize, sampleRate):
-        self.OUTPUT_FILE = open("output.csv", "a")
-        self.OUTPUT_REAL = open("real.csv", "a")
-        self.OUTPUT_IMAG = open("imag.csv", "a")
+    def cleanup(self):
+        self.stop_thread = True
+        self.spThread.join()
 
+    def __init__(self, fftSize, sampleRate):
         self.MAX_FFTS = 200
         self.MAX_PEAKS = 200
         self.MAX_RANGES = 500
@@ -150,8 +154,10 @@ class SignalProcessor:
         self.imag = np.array([])
         self.mag = np.array([])
 
+        self.data_stream_started = False
         self.new_data = False
-
+        
+        self.stop_thread = False
         self.spThread = threading.Thread(target=self.run)
         self.spThread.start()
 
