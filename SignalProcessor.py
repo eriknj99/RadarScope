@@ -134,7 +134,6 @@ class SignalProcessor:
         self.MAX_PEAKS = 200
         self.MAX_RANGES = 500
         self.MAX_VELS = 500
-        #self.numFFTs = 0
        
         self.FFT_SIZE = fftSize 
         self.SAMPLE_RATE = sampleRate 
