@@ -1,5 +1,7 @@
 # RadarScope
 The real time signal processing and visualization componenet of my FMCW radar senior design project.
+![image](https://user-images.githubusercontent.com/11905989/117103469-6d6c5980-ad48-11eb-9f8a-17d0c8721dc5.png)
+
 
 ## Setup 
 1. Install required dependencies
