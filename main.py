@@ -8,6 +8,8 @@ import numpy as np
 import time
 import sys
 import signal
+import subprocess
+import os
 
 FFT_SIZE = 2048
 SAMPLE_RATE = 50000
@@ -17,6 +19,8 @@ saveFilePrefix = ""
 
 replay = False
 replayFilePrefix = ""
+
+video = False
 
 #Arg parse
 if(len(sys.argv) > 1):
@@ -29,6 +33,8 @@ if(len(sys.argv) > 1):
                 Logger.info("Replaying dataset: \'" + replayFilePrefix + "\'")
             else:
                 Logger.error("You must specify a replay file prefix")
+        if(sys.argv[i] == "--video"):
+            video = True
         if(sys.argv[i] == "--save"):
             if(len(sys.argv) > i+1):
                 save = True
@@ -46,6 +52,13 @@ dataInput = AsyncSerialInput.AsyncSerialInput(signalProcessor, FFT_SIZE, SAMPLE_
 # Wait until the signal processor recieves it's first packet before starting the GUI
 while(not signalProcessor.data_stream_started):
     time.sleep(0)
+
+if(video and replay):
+   vfile = replayFilePrefix+".mp4"
+   Logger.info("Playing video file: " + vfile)
+   subprocess.Popen(["./vids/play.sh", "./vids/" + vfile])
+#   os.spawnl(os.NOWAIT, "./vids/play.sh ./vids/"+vfile) i
+
 signal.signal(signal.SIGINT, signal.SIG_DFL)
 ms1 = ModularScope.ModularScope(signalProcessor)
 #ms1.showFFT("fft")

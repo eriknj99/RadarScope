@@ -114,7 +114,7 @@ class AsyncSerialInput:
         self.replayFilePrefix = replayFilePrefix
         self.save = save
         self.saveFilePrefix = saveFilePrefix
-
+        
         self.stop_thread = False
         
 
